@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pr-review-agent"
+version = "0.1.0"
+description = "An intelligent AI agent for automated Pull Request code reviews"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "PR Review Agent Team" }
+]
+dependencies = [
+    "pydantic>=2.5.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.27.0",
+    "click>=8.1.0",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.12.0"]
+gemini = ["google-genai>=0.1.1"]
+anthropic = ["anthropic>=0.18.0"]
+all = [
+    "openai>=1.12.0",
+    "google-genai>=0.1.1",
+    "anthropic>=0.18.0",
+]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+pr-review = "pr_reviewer.cli:main"
