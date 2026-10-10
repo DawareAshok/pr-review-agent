@@ -58,14 +58,15 @@ class ReviewEngine:
             raise ValueError(f"No reviewable file changes found in PR #{pr_number} ({repo}).")
 
         # 2. Build formatted diff & context
-        diff_text = parsed_diff.to_review_text(annotated=self.annotated_diff)
-        pr_context = f"""Repository: {repo}
+        diff_text = f"<untrusted_pr_diff>\n{parsed_diff.to_review_text(annotated=self.annotated_diff)}\n</untrusted_pr_diff>"
+        pr_context = f"""<untrusted_pr_context>
+Repository: {repo}
 PR #{pr_number}: {pr_details.get('title', 'No Title')}
 Author: @{pr_details.get('user', {}).get('login', 'unknown')}
 Branches: {pr_details.get('head', {}).get('ref')} -> {pr_details.get('base', {}).get('ref')}
 Description:
 {pr_details.get('body') or 'No description provided.'}
-"""
+</untrusted_pr_context>"""
 
         # 3. Invoke LLM review
         report = self.provider.review_diff(
@@ -128,7 +129,7 @@ Base Reference: {base_branch or 'HEAD / Working Tree'}
 Mode: {'Staged changes only' if staged_only else 'Working tree changes'}
 """
 
-        diff_text = parsed_diff.to_review_text(annotated=self.annotated_diff)
+        diff_text = f"<untrusted_pr_diff>\n{parsed_diff.to_review_text(annotated=self.annotated_diff)}\n</untrusted_pr_diff>"
         report = self.provider.review_diff(
             diff_text=diff_text,
             pr_context=pr_context,
@@ -153,7 +154,7 @@ Mode: {'Staged changes only' if staged_only else 'Working tree changes'}
             raise ValueError(f"No active code changes found in diff file '{file_path}'.")
 
         pr_context = f"Patch Diff File: {os.path.basename(file_path)}"
-        diff_text = parsed_diff.to_review_text(annotated=self.annotated_diff)
+        diff_text = f"<untrusted_pr_diff>\n{parsed_diff.to_review_text(annotated=self.annotated_diff)}\n</untrusted_pr_diff>"
 
         report = self.provider.review_diff(
             diff_text=diff_text,

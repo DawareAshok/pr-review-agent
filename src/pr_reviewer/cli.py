@@ -17,6 +17,7 @@ from rich.console import Console
 
 from pr_reviewer.engine import ReviewEngine
 from pr_reviewer.formatter import format_json_report, format_markdown_report, render_terminal_report
+from pr_reviewer.sanitizer import sanitize_sensitive_text
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -120,6 +121,12 @@ def main(
         )
         sys.exit(1)
 
+    if token:
+        console.print(
+            "[bold yellow]Security Advisory:[/bold yellow] Passing tokens via CLI flags may expose them "
+            "in process listings and shell history. Consider using the [bold]GITHUB_TOKEN[/bold] environment variable."
+        )
+
     try:
         # Initialize review engine
         with console.status("[bold cyan]Initializing PR Review Engine...[/bold cyan]", spinner="dots"):
@@ -169,7 +176,8 @@ def main(
             console.print("[bold green]Review comment posted to GitHub PR discussion thread.[/bold green]")
 
     except Exception as e:
-        console.print(f"\n[bold red]Error executing review:[/bold red] {e}")
+        safe_error = sanitize_sensitive_text(str(e))
+        console.print(f"\n[bold red]Error executing review:[/bold red] {safe_error}")
         sys.exit(1)
 
 

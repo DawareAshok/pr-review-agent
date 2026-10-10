@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 
 from pr_reviewer.models import ReviewReport, ReviewVerdict
+from pr_reviewer.sanitizer import validate_repo_identifier
 
 
 class GitHubClientError(Exception):
@@ -26,25 +27,41 @@ def parse_pr_identifier(identifier: str) -> Tuple[str, int]:
     url_pattern = r"^https?://github\.com/([^/]+/[^/]+)/pull/(\d+)(?:/.*)?$"
     match = re.match(url_pattern, cleaned)
     if match:
-        return match.group(1), int(match.group(2))
+        repo = validate_repo_identifier(match.group(1))
+        pr_num = int(match.group(2))
+        if pr_num <= 0:
+            raise ValueError(f"Invalid PR number: {pr_num}. Must be a positive integer.")
+        return repo, pr_num
 
     # owner/repo#123
     hash_pattern = r"^([^/]+/[^#\s]+)#(\d+)$"
     match = re.match(hash_pattern, cleaned)
     if match:
-        return match.group(1), int(match.group(2))
+        repo = validate_repo_identifier(match.group(1))
+        pr_num = int(match.group(2))
+        if pr_num <= 0:
+            raise ValueError(f"Invalid PR number: {pr_num}. Must be a positive integer.")
+        return repo, pr_num
 
     # owner/repo/123
     slash_pattern = r"^([^/]+/[^/\s]+)/(\d+)$"
     match = re.match(slash_pattern, cleaned)
     if match:
-        return match.group(1), int(match.group(2))
+        repo = validate_repo_identifier(match.group(1))
+        pr_num = int(match.group(2))
+        if pr_num <= 0:
+            raise ValueError(f"Invalid PR number: {pr_num}. Must be a positive integer.")
+        return repo, pr_num
 
     # owner/repo 123
     space_pattern = r"^([^/\s]+/[^\s]+)\s+(\d+)$"
     match = re.match(space_pattern, cleaned)
     if match:
-        return match.group(1), int(match.group(2))
+        repo = validate_repo_identifier(match.group(1))
+        pr_num = int(match.group(2))
+        if pr_num <= 0:
+            raise ValueError(f"Invalid PR number: {pr_num}. Must be a positive integer.")
+        return repo, pr_num
 
     raise ValueError(
         f"Invalid GitHub PR identifier '{identifier}'. "
@@ -71,6 +88,7 @@ class GitHubClient:
 
     def get_pr_details(self, repo: str, pr_number: int) -> Dict[str, Any]:
         """Fetches metadata for a given PR."""
+        repo = validate_repo_identifier(repo)
         url = f"{self.base_url}/repos/{repo}/pulls/{pr_number}"
         with httpx.Client(timeout=self.timeout) as client:
             response = client.get(url, headers=self._get_headers())
@@ -87,6 +105,7 @@ class GitHubClient:
 
     def get_pr_diff(self, repo: str, pr_number: int) -> str:
         """Fetches the unified git diff for a PR."""
+        repo = validate_repo_identifier(repo)
         url = f"{self.base_url}/repos/{repo}/pulls/{pr_number}"
         headers = self._get_headers(accept="application/vnd.github.v3.diff")
         with httpx.Client(timeout=self.timeout) as client:
@@ -99,6 +118,7 @@ class GitHubClient:
 
     def post_issue_comment(self, repo: str, pr_number: int, comment_body: str) -> Dict[str, Any]:
         """Posts a general comment to the PR issue thread."""
+        repo = validate_repo_identifier(repo)
         if not self.token:
             raise GitHubClientError("GITHUB_TOKEN is required to post comments to GitHub.")
 
@@ -121,6 +141,7 @@ class GitHubClient:
         Creates a formal Pull Request Review.
         event: 'APPROVE', 'REQUEST_CHANGES', or 'COMMENT'
         """
+        repo = validate_repo_identifier(repo)
         if not self.token:
             raise GitHubClientError("GITHUB_TOKEN is required to post formal reviews.")
 

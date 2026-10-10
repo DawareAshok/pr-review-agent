@@ -107,7 +107,8 @@ class MockLLMProvider(BaseLLMProvider):
                         )
                     )
             elif not line.startswith("-"):
-                line_num += 1
+                if not line.startswith(("<untrusted_", "</untrusted_", "```")):
+                    line_num += 1
 
         if not comments:
             comments.append(
