@@ -55,16 +55,21 @@ Provide your complete code review formatted strictly as valid JSON adhering to t
             return ReviewReport.model_validate(data)
         except Exception:
             # Fallback to direct HTTP request using httpx if google-genai is not yet installed or schema failed
+            import urllib.parse
             import httpx
 
-            target_model = self.model_name or "gemini-2.0-flash"
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{target_model}:generateContent?key={self.api_key}"
+            safe_model = urllib.parse.quote(self.model_name or "gemini-2.0-flash", safe="")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{safe_model}:generateContent"
+            headers = {
+                "x-goog-api-key": self.api_key,
+                "Content-Type": "application/json",
+            }
             payload = {
                 "contents": [{"parts": [{"text": user_prompt}]}],
                 "generationConfig": {"responseMimeType": "application/json"}
             }
             with httpx.Client(timeout=60.0) as http_client:
-                res = http_client.post(url, json=payload)
+                res = http_client.post(url, headers=headers, json=payload)
                 res.raise_for_status()
                 res_data = res.json()
                 try:

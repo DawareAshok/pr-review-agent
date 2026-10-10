@@ -25,10 +25,19 @@ def run_git_command(args: list[str], cwd: Optional[str] = None) -> str:
         raise LocalGitError(f"Git command failed: {error_msg}")
 
 
+from pr_reviewer.sanitizer import MAX_DIFF_FILE_SIZE, validate_git_ref
+
+
 def get_diff_from_file(file_path: str) -> str:
-    """Reads git diff text from an external file."""
+    """Reads git diff text from an external file with size limits."""
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Diff file '{file_path}' does not exist.")
+    file_size = os.path.getsize(file_path)
+    if file_size > MAX_DIFF_FILE_SIZE:
+        raise ValueError(
+            f"Diff file '{file_path}' exceeds maximum allowed size "
+            f"({file_size / (1024 * 1024):.1f} MB > {MAX_DIFF_FILE_SIZE / (1024 * 1024):.0f} MB)."
+        )
     with open(file_path, "r", encoding="utf-8", errors="replace") as f:
         return f.read()
 
@@ -59,7 +68,8 @@ def get_local_diff(base_branch: Optional[str] = None, staged_only: bool = False,
     - Otherwise: git diff HEAD (or working tree against latest commit)
     """
     if base_branch:
-        return run_git_command(["diff", f"{base_branch}...HEAD"], cwd=cwd)
+        safe_base = validate_git_ref(base_branch)
+        return run_git_command(["diff", f"{safe_base}...HEAD", "--"], cwd=cwd)
     elif staged_only:
         return run_git_command(["diff", "--cached"], cwd=cwd)
     else:

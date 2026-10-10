@@ -155,11 +155,20 @@ class ParsedDiff:
         return "\n\n".join(chunks)
 
 
+MAX_DIFF_TEXT_LENGTH = 10 * 1024 * 1024  # 10 MB limit for safety against DoS / memory exhaustion
+
+
 def parse_unified_diff(diff_text: str) -> ParsedDiff:
     """Parses a standard unified git diff string into structured FileDiff objects."""
     parsed = ParsedDiff()
     if not diff_text or not diff_text.strip():
         return parsed
+
+    if len(diff_text) > MAX_DIFF_TEXT_LENGTH:
+        raise ValueError(
+            f"Diff length ({len(diff_text)} bytes) exceeds maximum safe parsing limit "
+            f"({MAX_DIFF_TEXT_LENGTH} bytes)."
+        )
 
     # Split by "diff --git "
     diff_sections = re.split(r"(?=diff --git )", diff_text)

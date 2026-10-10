@@ -25,6 +25,12 @@ from pr_reviewer.providers import (
     OpenAIProvider,
     get_provider,
 )
+from pr_reviewer.sanitizer import (
+    MAX_DIFF_FILE_SIZE,
+    sanitize_sensitive_text,
+    validate_git_ref,
+    validate_repo_identifier,
+)
 
 __all__ = [
     "__version__",
@@ -52,4 +58,8 @@ __all__ = [
     "format_markdown_report",
     "format_json_report",
     "render_terminal_report",
+    "sanitize_sensitive_text",
+    "validate_git_ref",
+    "validate_repo_identifier",
+    "MAX_DIFF_FILE_SIZE",
 ]
